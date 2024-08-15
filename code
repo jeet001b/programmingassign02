@@ -1,0 +1,120 @@
+#Plot the 30-day mortality rates for heart attack
+
+setwd("C:\\Users\\hp\\Desktop\\jeet\\Data science\\progassgn 03")
+outcome <- read.csv("outcome-of-care-measures.csv", colClasses = "character")
+head(outcome)
+outcome[, 11] <- as.numeric(outcome[, 11])
+hist(outcome[, 11])
+
+#__________________#_________________________#________________#_______________
+
+# Finding the best hospital in a state
+
+best <- function(state, outcome) {
+    # Read outcome data
+    outcome_data <- read.csv("outcome-of-care-measures.csv", colClasses = "character")
+    
+    # Create a mapping of outcome names to column indices
+    outcome_map <- list(
+        "heart attack" = 11,
+        "heart failure" = 17,
+        "pneumonia" = 23
+    )
+    
+    # Check that state and outcome are valid
+    if (!state %in% outcome_data$State) {
+        stop("Invalid state")
+    }
+    if (!outcome %in% names(outcome_map)) {
+        stop("Invalid outcome")
+    }
+    
+    # Filter data for the specified state
+    state_data <- outcome_data[outcome_data$State == state, ]
+    
+    # Select only rows with numeric values in the outcome column
+    state_data <- state_data[grepl("^[0-9.]+$", state_data[, outcome_map[[outcome]]]), ]
+    
+    # Convert the outcome column to numeric
+    outcome_col <- as.numeric(state_data[, outcome_map[[outcome]]])
+    
+    # Find the hospital with the lowest 30-day death rate
+    best_hospital <- state_data[which.min(outcome_col), "Hospital.Name"]
+    
+    # Return the hospital name
+    return(best_hospital)
+}
+# to see the output
+best("TX", "heart attack")
+best("TX", "heart failure")
+best("MD", "heart attack")
+best("NY", "hert attack")
+best("BB", "heart attack")
+#_____________#_____________________________#__________________________
+
+# Ranking hospitals by outcome in a state
+rankall <- function(outcome, num = "best") {
+    # Read outcome data
+    outcome_data <- read.csv("outcome-of-care-measures.csv", colClasses = "character")
+    
+    # Create a mapping of outcome names to column indices
+    outcome_map <- list(
+        "heart attack" = 11,
+        "heart failure" = 17,
+        "pneumonia" = 23
+    )
+    
+    # Check that outcome is valid
+    if (!outcome %in% names(outcome_map)) {
+        stop("Invalid outcome")
+    }
+    
+    # Initialize an empty data frame to store the results
+    results <- data.frame(hospital = character(), state = character())
+    
+    # Loop through each state
+    for (state in unique(outcome_data$State)) {
+        # Filter data for the specified state
+        state_data <- outcome_data[outcome_data$State == state, ]
+        
+        # Select only rows with numeric values in the outcome column
+        state_data <- state_data[grepl("^[0-9.]+$", state_data[, outcome_map[[outcome]]]), ]
+        
+        # Convert the outcome column to numeric
+        outcome_col <- as.numeric(state_data[, outcome_map[[outcome]]])
+        
+        # Order the hospitals by the outcome column
+        ordered_data <- state_data[order(outcome_col), ]
+        
+        # If num is "best", find the hospital with the lowest 30-day death rate
+        if (num == "best") {
+            hospital <- ordered_data[1, "Hospital.Name"]
+        }
+        # If num is "worst", find the hospital with the highest 30-day death rate
+        else if (num == "worst") {
+            hospital <- ordered_data[nrow(ordered_data), "Hospital.Name"]
+        }
+        # If num is a number, find the hospital at that rank
+        else if (is.numeric(num) && num > 0) {
+            if (num <= nrow(ordered_data)) {
+                hospital <- ordered_data[num, "Hospital.Name"]
+            } else {
+                hospital <- NA
+            }
+        }
+        else {
+            stop("Invalid rank")
+        }
+        
+        # Add the result to the data frame
+        results <- rbind(results, data.frame(hospital = hospital, state = state))
+    }
+    
+    # Return the results
+    return(results)
+}
+# for output
+head(rankall("heart attack", 20), 10)
+tail(rankall("pneumonia", "worst"), 3)
+tail(rankall("heart failure"), 10)
+#_____________________________#_______________________________________#_________________________
